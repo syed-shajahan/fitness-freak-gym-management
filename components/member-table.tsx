@@ -15,7 +15,6 @@ import { gymPlans } from "@/lib/plans"
 
 export default function MemberTable() {
   const { members, deleteMember } = useMembers()
-
   const getPlanLabel = (planValue: string) => {
     return gymPlans.find((p) => p.value === planValue)?.label
   }
