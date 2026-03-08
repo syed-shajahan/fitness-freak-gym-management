@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState } from "react"
 
-type Member = {
+export type Member = {
   id: string
   name: string
   phone: string
@@ -15,6 +15,7 @@ type MemberContextType = {
   members: Member[]
   addMember: (member: Member) => void
   deleteMember: (id: string) => void
+  updateMember: (member: Member) => void
 }
 
 const MemberContext = createContext<MemberContextType | null>(null)
@@ -30,19 +31,23 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
     setMembers((prev) => prev.filter((m) => m.id !== id))
   }
 
+  const updateMember = (updated: Member) => {
+    setMembers((prev) =>
+      prev.map((m) => (m.id === updated.id ? updated : m))
+    )
+  }
+
   return (
-    <MemberContext.Provider value={{ members, addMember, deleteMember }}>
+    <MemberContext.Provider
+      value={{ members, addMember, deleteMember, updateMember }}
+    >
       {children}
     </MemberContext.Provider>
   )
 }
 
-export function useMembers() {
+export const useMembers = () => {
   const context = useContext(MemberContext)
-
-  if (!context) {
-    throw new Error("useMembers must be used inside MemberProvider")
-  }
-
+  if (!context) throw new Error("useMembers must be used inside provider")
   return context
 }

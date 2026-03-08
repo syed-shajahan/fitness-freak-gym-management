@@ -1,14 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useMembers } from "@/app/context/member-context"
 import { gymPlans } from "@/lib/plans"
 
-export default function MemberForm() {
-  const { addMember } = useMembers()
+export default function MemberForm({
+  member,
+  onSuccess,
+}: {
+  member?: any
+  onSuccess?: () => void
+}) {
+  const { addMember, updateMember } = useMembers()
 
   const [form, setForm] = useState({
     name: "",
@@ -18,6 +24,14 @@ export default function MemberForm() {
     endDate: "",
   })
 
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (member) {
+      setForm(member)
+    }
+  }, [member])
+
   const calculateEndDate = (plan: string, startDate: string) => {
     const selectedPlan = gymPlans.find((p) => p.value === plan)
 
@@ -26,7 +40,11 @@ export default function MemberForm() {
     const start = new Date(startDate)
     start.setMonth(start.getMonth() + selectedPlan.duration)
 
-    return start.toISOString().split("T")[0]
+    const year = start.getFullYear()
+    const month = String(start.getMonth() + 1).padStart(2, "0")
+    const day = String(start.getDate()).padStart(2, "0")
+
+    return `${year}-${month}-${day}`
   }
 
   const handleChange = (
@@ -52,10 +70,29 @@ export default function MemberForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    addMember({
-      id: Date.now().toString(),
-      ...form,
-    })
+    if (!form.name || !form.phone || !form.plan || !form.startDate) {
+      setError("Please fill all fields")
+      return
+    }
+
+    if (!/^\d{10}$/.test(form.phone)) {
+      setError("Phone number must be 10 digits")
+      return
+    }
+
+    setError("")
+
+    if (member) {
+      updateMember({
+        id: member.id,
+        ...form,
+      })
+    } else {
+      addMember({
+        id: Date.now().toString(),
+        ...form,
+      })
+    }
 
     setForm({
       name: "",
@@ -64,14 +101,23 @@ export default function MemberForm() {
       startDate: "",
       endDate: "",
     })
+
+    onSuccess?.()
   }
 
   return (
     <Card className="mb-6">
       <CardContent className="p-6 space-y-4">
-        <h2 className="text-xl font-bold">Add Member</h2>
+
+        <h2 className="text-xl font-bold">
+          {member ? "Edit Member" : "Add Member"}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {error && (
+            <p className="text-red-500 text-sm">{error}</p>
+          )}
 
           <Input
             name="name"
@@ -82,9 +128,10 @@ export default function MemberForm() {
 
           <Input
             name="phone"
-            placeholder="Phone"
+            placeholder="Phone (10 digits)"
             value={form.phone}
             onChange={handleChange}
+            maxLength={10}
           />
 
           <select
@@ -117,7 +164,7 @@ export default function MemberForm() {
           />
 
           <Button type="submit">
-            Add Member
+            {member ? "Update Member" : "Add Member"}
           </Button>
 
         </form>
